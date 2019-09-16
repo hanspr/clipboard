@@ -63,14 +63,6 @@ func readFile(path string) string {
 		return ""
 	}
 	defer file.Close()
-	//	scanner := bufio.NewScanner(file)
-	//	for scanner.Scan() {
-	//		if clip == "" {
-	//			clip = scanner.Text()
-	//		} else {
-	//			clip = clip + "\n" + scanner.Text()
-	//		}
-	//	}
 	b, err := ioutil.ReadAll(file)
 	clip = string(b)
 	return clip
