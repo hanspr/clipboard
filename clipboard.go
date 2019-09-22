@@ -12,6 +12,7 @@ type Clipboard struct {
 	url       string
 	key       string
 	secret    string
+	disabled  bool
 }
 
 func New() *Clipboard {
@@ -23,7 +24,10 @@ func (c *Clipboard) SetLocalPath(path string) {
 	c.localPath = path
 }
 
-func (c *Clipboard) SetCloudPath(url, key, secret string) {
+func (c *Clipboard) SetCloudPath(url, key, pass, secret string) {
+	if key == "" || pass == "" {
+		c.disabled = true
+	}
 	c.url = url
 	c.key = key
 	c.secret = secret
@@ -32,14 +36,20 @@ func (c *Clipboard) SetCloudPath(url, key, secret string) {
 func (c *Clipboard) ReadFrom(location string) string {
 	if location == "local" {
 		return readFile(c.localPath)
+	} else if location == "cloud" {
+		return c.readCloud()
 	}
 	return ""
 }
 
-func (c *Clipboard) WriteTo(text *string, location string) {
+func (c *Clipboard) WriteTo(text *string, location string) string {
+	msg := ""
 	if location == "local" {
 		writeFile(c.localPath, text)
+	} else if location == "cloud" {
+		msg = c.writeCloud(text)
 	}
+	return msg
 }
 
 func (c *Clipboard) AppendTo(text *string, location string) {
@@ -48,12 +58,9 @@ func (c *Clipboard) AppendTo(text *string, location string) {
 	}
 }
 
-func (c *Clipboard) writeTo(text *string, location string) {
-}
-
-func (c *Clipboard) appendTo(text *string, location string) {
-
-}
+// -----------------------------------
+// Local clipboard
+// -----------------------------------
 
 func readFile(path string) string {
 	var clip string
@@ -92,4 +99,43 @@ func appendFile(path string, text *string) {
 		return
 	}
 	file.Sync()
+}
+
+// -----------------------------------
+// Cloud clipboard
+// -----------------------------------
+
+// Request and Response are encripted with user password
+// Document is encript with user passphrase
+
+// Cmd		: saveclip, getclip, uploadfile, downloadfile, uploadsettings, downloadsetting, uploadmicroide, downloadmicroide
+// Document	: BASE64 encoded clip, file, settings or microide
+
+type request struct {
+	Cmd      string `json:"cmd"`
+	Document string `json:"document,omitempty"`
+}
+
+// Status	: true=success, false==error
+// ErrMsg	: Error message
+// Document	: BASE64 encoded clip, file, settings or microide
+
+type response struct {
+	Status   bool   `json:"status"`
+	ErrMsg   string `json:"errmsg"`
+	Document string `json:"document"`
+}
+
+func (c *Clipboard) readCloud() string {
+	if c.disabled {
+		return ""
+	}
+	return ""
+}
+
+func (c *Clipboard) writeCloud(text *string) string {
+	if c.disabled {
+		return "Service not available"
+	}
+	return ""
 }
