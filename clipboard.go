@@ -27,6 +27,10 @@ type Clipboard struct {
 	disabled  bool
 }
 
+// -----------------------------------
+// Clipboard Setup
+// -----------------------------------
+
 func New() *Clipboard {
 	c := new(Clipboard)
 	return c
@@ -51,22 +55,9 @@ func (c *Clipboard) SetCloudPath(url, apikey, apipass, secret string) error {
 	return nil
 }
 
-func (c *Clipboard) SetUpCloudService() string {
-	emtpy := ""
-	return c.writeCloud("setup", &emtpy)
-}
-
-func (c *Clipboard) ChangeCloudPassword(newpass string) string {
-	if newpass == "" {
-		return "Password can not be empty"
-	}
-	return c.writeCloud("chgpass", &newpass)
-}
-
-func (c *Clipboard) ResetCloudService() string {
-	emtpy := ""
-	return c.writeCloud("reset", &emtpy)
-}
+// -----------------------------------
+// Clipboard
+// -----------------------------------
 
 func (c *Clipboard) ReadFrom(location, cmd string) string {
 	if location == "local" {
@@ -141,6 +132,27 @@ func appendFile(path string, text *string) {
 // -----------------------------------
 // Cloud clipboard
 // -----------------------------------
+
+func (c *Clipboard) CloudDisabled() bool {
+	return c.disabled
+}
+
+func (c *Clipboard) SetUpCloudService() string {
+	emtpy := ""
+	return c.writeCloud("setup", &emtpy)
+}
+
+func (c *Clipboard) ChangeCloudPassword(newpass string) string {
+	if newpass == "" {
+		return "Password can not be empty"
+	}
+	return c.writeCloud("chgpass", &newpass)
+}
+
+func (c *Clipboard) ResetCloudService() string {
+	emtpy := ""
+	return c.writeCloud("reset", &emtpy)
+}
 
 // Cmd		: clip, file, setting, microide, setup
 // Document	: Encripted, BASE64 clip, file, settings or microide
