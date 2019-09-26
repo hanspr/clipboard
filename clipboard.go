@@ -56,6 +56,13 @@ func (c *Clipboard) SetUpCloudService() string {
 	return c.writeCloud("setup", &emtpy)
 }
 
+func (c *Clipboard) ChangeCloudPassword(newpass string) string {
+	if newpass == "" {
+		return "Password can not be empty"
+	}
+	return c.writeCloud("chgpass", &newpass)
+}
+
 func (c *Clipboard) ResetCloudService() string {
 	emtpy := ""
 	return c.writeCloud("reset", &emtpy)
@@ -142,6 +149,7 @@ type request struct {
 	Cmd      string `json:"cmd"`
 	Key      string `json:"apikey"`
 	Pass     string `json:"apipass"`
+	NewPass  string `json:"newpass,omitempty"`
 	Document string `json:"document,omitempty"`
 }
 
@@ -184,7 +192,7 @@ func (c *Clipboard) readCloud(cmd string) string {
 		return ""
 	}
 	if jresp.Success == false {
-		return jresp.ErrMsg
+		return ""
 	}
 	text := DecriptData(c.secret, jresp.Document)
 	return string(text)
@@ -192,18 +200,21 @@ func (c *Clipboard) readCloud(cmd string) string {
 
 func (c *Clipboard) writeCloud(cmd string, text *string) string {
 	if c.disabled {
-		return "Service not available"
+		return "wC:Service not available"
 	}
 	var jresp response
 	req := new(request)
-	req.Cmd = "save" + cmd
+	req.Cmd = cmd
 	req.Key = c.apikey
 	req.Pass = c.apipass
+	if cmd == "chgpass" {
+		req.NewPass = *text
+		*text = ""
+	}
 	if *text != "" {
 		req.Document = EncriptData(c.secret, *text)
 	}
 	jreq, _ := json.Marshal(req)
-	return string(jreq)
 	hreq, err := http.NewRequest("POST", c.url+"/put", bytes.NewBuffer(jreq))
 	hreq.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
@@ -211,18 +222,21 @@ func (c *Clipboard) writeCloud(cmd string, text *string) string {
 	}
 	resp, err := client.Do(hreq)
 	if err != nil {
-		return err.Error()
+		return "wC1:" + err.Error()
 	}
 	defer resp.Body.Close()
 	sresp, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err.Error()
+		return "wC2:" + err.Error()
 	}
 	if err = json.Unmarshal(sresp, &jresp); err != nil {
-		return err.Error()
+		return "wC3:" + err.Error()
 	}
 	if jresp.Success == false {
 		return jresp.ErrMsg
+	}
+	if cmd == "chgpass" {
+		c.apipass = req.NewPass
 	}
 	return ""
 }
