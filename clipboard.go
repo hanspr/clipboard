@@ -170,7 +170,7 @@ type request struct {
 // Document	: BASE64 encoded clip, file, settings or microide
 
 type response struct {
-	Success  bool   `json:"succcess"`
+	Success  bool   `json:"success"`
 	ErrMsg   string `json:"errmsg"`
 	Document string `json:"document"`
 }
