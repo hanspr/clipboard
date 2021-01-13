@@ -138,8 +138,8 @@ func (c *Clipboard) CloudDisabled() bool {
 }
 
 func (c *Clipboard) SetUpCloudService() string {
-	emtpy := ""
-	return c.writeCloud("setup", &emtpy)
+	empty := ""
+	return c.writeCloud("setup", &empty)
 }
 
 func (c *Clipboard) ChangeCloudPassword(newpass string) string {
@@ -150,8 +150,8 @@ func (c *Clipboard) ChangeCloudPassword(newpass string) string {
 }
 
 func (c *Clipboard) ResetCloudService() string {
-	emtpy := ""
-	return c.writeCloud("reset", &emtpy)
+	empty := ""
+	return c.writeCloud("reset", &empty)
 }
 
 // Cmd		: clip, file, setting, microide, setup
