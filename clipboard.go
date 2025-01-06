@@ -153,8 +153,8 @@ func (c *Clipboard) ResetCloudService() string {
 	return c.writeCloud("reset", &empty)
 }
 
-// Cmd		: clip, file, setting, microide, setup
-// Document	: Encripted, BASE64 clip, file, settings or microide
+// Cmd		: clip, file, setting, miide, setup
+// Document	: Encrypted, BASE64 clip, file, settings or miide
 
 type request struct {
 	Cmd      string `json:"cmd"`
@@ -166,7 +166,7 @@ type request struct {
 
 // Success	: true, false
 // ErrMsg	: Error message
-// Document	: BASE64 encoded clip, file, settings or microide
+// Document	: BASE64 encoded clip, file, settings or miide
 
 type response struct {
 	Success  bool   `json:"success"`
@@ -205,7 +205,7 @@ func (c *Clipboard) readCloud(cmd string) string {
 	if !jresp.Success {
 		return ""
 	}
-	text := DecriptData(c.secret, jresp.Document)
+	text := DecryptData(c.secret, jresp.Document)
 	return string(text)
 }
 
@@ -223,7 +223,7 @@ func (c *Clipboard) writeCloud(cmd string, text *string) string {
 		*text = ""
 	}
 	if *text != "" {
-		req.Document = EncriptData(c.secret, *text)
+		req.Document = EncryptData(c.secret, *text)
 	}
 	jreq, _ := json.Marshal(req)
 	hreq, _ := http.NewRequest("POST", c.url+"/put", bytes.NewBuffer(jreq))
@@ -265,12 +265,12 @@ func getKeyHash(key string) *[32]byte {
 	return &b
 }
 
-func EncriptData(key, data string) string {
+func EncryptData(key, data string) string {
 	cdata, _ := cryptopasta.Encrypt([]byte(data), getKeyHash(key))
 	return base64.StdEncoding.EncodeToString(cdata)
 }
 
-func DecriptData(key, ecdata string) string {
+func DecryptData(key, ecdata string) string {
 	cdata, _ := base64.StdEncoding.DecodeString(ecdata)
 	data, _ := cryptopasta.Decrypt(cdata, getKeyHash(key))
 	return string(data)
