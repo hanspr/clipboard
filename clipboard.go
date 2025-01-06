@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -44,7 +43,7 @@ func (c *Clipboard) SetCloudPath(url, apikey, apipass, secret string) error {
 	c.disabled = true
 	if url == "" || apikey == "" || apipass == "" || secret == "" {
 		return errors.New("incomplete cloud connection information")
-	} else if strings.Contains(url, "https") == false && strings.Contains(url, "localhost") == false {
+	} else if !strings.Contains(url, "https") && !strings.Contains(url, "localhost") {
 		return errors.New("incorrect url")
 	}
 	c.disabled = false
@@ -98,7 +97,7 @@ func readFile(path string) string {
 		return ""
 	}
 	defer file.Close()
-	b, err := ioutil.ReadAll(file)
+	b, _ := io.ReadAll(file)
 	clip = string(b)
 	return clip
 }
@@ -186,7 +185,7 @@ func (c *Clipboard) readCloud(cmd string) string {
 	req.Key = c.apikey
 	req.Pass = c.apipass
 	jreq, _ := json.Marshal(req)
-	hreq, err := http.NewRequest("POST", c.url+"/get", bytes.NewBuffer(jreq))
+	hreq, _ := http.NewRequest("POST", c.url+"/get", bytes.NewBuffer(jreq))
 	hreq.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
 		Timeout: time.Second * 20,
@@ -196,14 +195,14 @@ func (c *Clipboard) readCloud(cmd string) string {
 		return ""
 	}
 	defer resp.Body.Close()
-	sresp, err := ioutil.ReadAll(resp.Body)
+	sresp, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ""
 	}
 	if err = json.Unmarshal(sresp, &jresp); err != nil {
 		return ""
 	}
-	if jresp.Success == false {
+	if !jresp.Success {
 		return ""
 	}
 	text := DecriptData(c.secret, jresp.Document)
@@ -227,7 +226,7 @@ func (c *Clipboard) writeCloud(cmd string, text *string) string {
 		req.Document = EncriptData(c.secret, *text)
 	}
 	jreq, _ := json.Marshal(req)
-	hreq, err := http.NewRequest("POST", c.url+"/put", bytes.NewBuffer(jreq))
+	hreq, _ := http.NewRequest("POST", c.url+"/put", bytes.NewBuffer(jreq))
 	hreq.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
 		Timeout: time.Second * 20,
@@ -237,14 +236,14 @@ func (c *Clipboard) writeCloud(cmd string, text *string) string {
 		return "wC1:" + err.Error()
 	}
 	defer resp.Body.Close()
-	sresp, err := ioutil.ReadAll(resp.Body)
+	sresp, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "wC2:" + err.Error()
 	}
 	if err = json.Unmarshal(sresp, &jresp); err != nil {
 		return "wC3:" + err.Error()
 	}
-	if jresp.Success == false {
+	if !jresp.Success {
 		return jresp.ErrMsg
 	}
 	if cmd == "chgpass" {
