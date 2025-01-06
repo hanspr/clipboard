@@ -3,8 +3,9 @@ package clipboard
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/base64"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -13,8 +14,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/gtank/cryptopasta"
 )
 
 type Clipboard struct {
@@ -178,7 +177,7 @@ func (c *Clipboard) readCloud(cmd string) string {
 	if c.disabled {
 		return ""
 	}
-	// Create requesto and send to server
+	// Create request and send to server
 	var jresp response
 	req := new(request)
 	req.Cmd = cmd
@@ -254,24 +253,45 @@ func (c *Clipboard) writeCloud(cmd string, text *string) string {
 
 // Crypt routines
 
-func getKeyHash(key string) *[32]byte {
-	b := [32]byte{}
-	h := md5.New()
-	h.Write([]byte(key))
-	str := hex.EncodeToString(h.Sum(nil))
-	for k, v := range []byte(str) {
-		b[k] = byte(v)
+func EncryptData(keyString, data string) string {
+	plaintext := []byte(data)
+	key, _ := hex.DecodeString(keyString) // Convert the key to bytes
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return ""
 	}
-	return &b
+
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize] // Initialization vector
+	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+		return ""
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+
+	// Return the encoded hex string
+	return hex.EncodeToString(ciphertext)
 }
 
-func EncryptData(key, data string) string {
-	cdata, _ := cryptopasta.Encrypt([]byte(data), getKeyHash(key))
-	return base64.StdEncoding.EncodeToString(cdata)
-}
+func DecryptData(keyString, ecdata string) string {
+	key, _ := hex.DecodeString(keyString)
+	ciphertextBytes, _ := hex.DecodeString(ecdata)
 
-func DecryptData(key, ecdata string) string {
-	cdata, _ := base64.StdEncoding.DecodeString(ecdata)
-	data, _ := cryptopasta.Decrypt(cdata, getKeyHash(key))
-	return string(data)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return ""
+	}
+
+	if len(ciphertextBytes) < aes.BlockSize {
+		return ""
+	}
+
+	iv := ciphertextBytes[:aes.BlockSize]
+	ciphertextBytes = ciphertextBytes[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(ciphertextBytes, ciphertextBytes)
+
+	return string(ciphertextBytes)
 }
