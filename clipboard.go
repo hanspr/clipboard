@@ -254,9 +254,10 @@ func (c *Clipboard) writeCloud(cmd string, text *string) string {
 // Crypt routines
 
 func EncryptData(keyString, data string) string {
+	keyString = fixKeySize(keyString)
 	plaintext := []byte(data)
-	key, _ := hex.DecodeString(keyString) // Convert the key to bytes
-	block, err := aes.NewCipher(key)
+
+	block, err := aes.NewCipher([]byte(keyString))
 	if err != nil {
 		return ""
 	}
@@ -270,19 +271,17 @@ func EncryptData(keyString, data string) string {
 	stream := cipher.NewCFBEncrypter(block, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
 
-	// Return the encoded hex string
 	return hex.EncodeToString(ciphertext)
 }
 
 func DecryptData(keyString, ecdata string) string {
-	key, _ := hex.DecodeString(keyString)
+	keyString = fixKeySize(keyString)
 	ciphertextBytes, _ := hex.DecodeString(ecdata)
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher([]byte(keyString))
 	if err != nil {
 		return ""
 	}
-
 	if len(ciphertextBytes) < aes.BlockSize {
 		return ""
 	}
@@ -294,4 +293,20 @@ func DecryptData(keyString, ecdata string) string {
 	stream.XORKeyStream(ciphertextBytes, ciphertextBytes)
 
 	return string(ciphertextBytes)
+}
+
+func fixKeySize(key string) string {
+	s := len(key)
+	if s != 16 && s != 24 && s != 32 {
+		if len(key) < 16 {
+			key = key + strings.Repeat("x", 16-len(key))
+		} else if s < 24 {
+			key = key[:16]
+		} else if s < 32 {
+			key = key[:24]
+		} else {
+			key = key[:32]
+		}
+	}
+	return key
 }
